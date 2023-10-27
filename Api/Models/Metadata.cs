@@ -24,9 +24,9 @@ public class Metadata
 
     [JsonPropertyName("owner")] public string Owner { get; set; }
 
-    [JsonPropertyName("parameters")] public IReadOnlyList<string> Parameters { get; set; }
+    [JsonPropertyName("parameters")] public IReadOnlyList<string> Parameters { get; set; } = new List<string>();
 
-    [JsonPropertyName("parameter_descriptions")] public Dictionary<string, string> ParameterDescriptions { get; set; }
+    [JsonPropertyName("parameter_descriptions")] public Dictionary<string, string> ParameterDescriptions { get; set; } = new();
 
     [JsonPropertyName("returns")] public string Returns { get; set; }
 

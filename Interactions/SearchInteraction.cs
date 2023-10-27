@@ -94,7 +94,7 @@ public partial class SearchInteraction : InteractionModuleBase<SocketInteraction
                 break;
             case "CONSTRUCTOR":
                 embed.WithDescription("```java\n" +
-                                      $"{string.Join(" ", thing.Object.Modifiers)} {thing.Object.Name} {{ }}\n" +
+                                      $"{string.Join(" ", thing.Object.Modifiers)}({string.Join(", ", thing.Object.Metadata.Parameters)}) {thing.Object.Name} {{ }}\n" +
                                       "```\n" +
                                       description + 
                                       parameters);
@@ -151,7 +151,7 @@ public partial class SearchInteraction : InteractionModuleBase<SocketInteraction
 
             var result = await cache.GetOrCreateAsync($"{query}_{javadoc}", async _ => await apiClient.Search(javadoc, query));
             
-            return AutocompletionResult.FromSuccess(result!.Select((o, i) => new AutocompleteResult($"{GetFullName(o, true, false).SubstringIgnoreError(80, true)} ({o.Object.Type})", $"{query}_{i}")).Take(25));
+            return AutocompletionResult.FromSuccess(result!.Select((o, i) => new AutocompleteResult($"{GetFullName(o, true, false).SubstringIgnoreError(75, true)} ({o.Object.Type}{(o.Object.Metadata.Parameters.Count > 0 ? $", {o.Object.Metadata.Parameters.Count} Params" : "")})", $"{query}_{i}")).Take(25));
         }
     }
     
