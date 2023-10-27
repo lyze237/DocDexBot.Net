@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocDexBot.Net", "DocDexBot.Net.csproj", "{7C55725C-B515-44F5-84EB-64C38B7BA8AD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7C55725C-B515-44F5-84EB-64C38B7BA8AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C55725C-B515-44F5-84EB-64C38B7BA8AD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C55725C-B515-44F5-84EB-64C38B7BA8AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C55725C-B515-44F5-84EB-64C38B7BA8AD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
