@@ -80,7 +80,6 @@ public partial class SearchInteraction : InteractionModuleBase<SocketInteraction
                                       parameters);
                 break;
             case "CLASS":
-            {
                 var extends = thing.Object.Metadata.Extensions.Contains("java.lang.Object") ? "" : $" extends {string.Join(", ", RemovePackage(thing.Object.Metadata.Extensions))}";
                 var implements = thing.Object.Metadata.Implementations.Count == 0 ? "" : $" implements {string.Join(", ", RemovePackage(thing.Object.Metadata.Implementations))}";
 
@@ -96,7 +95,18 @@ public partial class SearchInteraction : InteractionModuleBase<SocketInteraction
                                       "```\n" +
                                       description);
                 break;
-            }
+            case "INTERFACE":
+                embed.WithDescription("```java\n" +
+                                      $"{string.Join(" ", thing.Object.Modifiers)} interface {thing.Object.Name} {{ }}\n" +
+                                      "```\n" +
+                                      description);
+                break;
+            case "ENUM":
+                embed.WithDescription("```java\n" +
+                                      $"{string.Join(" ", thing.Object.Modifiers)} enum {thing.Object.Name} {{ \n\t{string.Join(", ", thing.Object.Metadata.Fields.Select(f => f[(f.LastIndexOf("%", StringComparison.Ordinal) + 1)..]))} \n}}\n" +
+                                      "```\n" +
+                                      description);
+                break;
             case "FIELD":
                 embed.WithDescription("```java\n" +
                                       $"{string.Join(" ", thing.Object.Modifiers)} {thing.Object.Metadata.Returns} {thing.Object.Name};\n" +
@@ -131,6 +141,8 @@ public partial class SearchInteraction : InteractionModuleBase<SocketInteraction
         {
             "METHOD" => $"{package}{thing.Object.Metadata.Owner}#{thing.Object.Name}{(withParameters ? $"({string.Join(", ", thing.Object.Metadata.Parameters)})" : "")}",
             "CLASS" => $"{package}{thing.Object.Name}",
+            "INTERFACE" => $"{package}{thing.Object.Name}",
+            "ENUM" => $"{package}{thing.Object.Name}",
             "FIELD" => $"{package}{thing.Object.Metadata.Owner}%{thing.Object.Name}",
             "CONSTRUCTOR" => $"{package}{thing.Object.Metadata.Owner}#{thing.Object.Name}{(withParameters ? $"({string.Join(", ", thing.Object.Metadata.Parameters)})" : "")}",
             _ => thing.Name
