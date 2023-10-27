@@ -33,6 +33,8 @@ var host = Host.CreateDefaultBuilder(args)
             return interactionService;
         });
 
+        services.AddMemoryCache();
+
         services.AddSingleton<HtmlToDiscordParser>();
         services.AddSingleton<IDocDexApiClient, DocDexApiClient>();
         

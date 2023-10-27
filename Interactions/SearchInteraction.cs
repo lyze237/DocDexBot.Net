@@ -6,6 +6,7 @@ using DocDexBot.Net.Api;
 using DocDexBot.Net.Api.Models;
 using DocDexBot.Net.Api.Parsers;
 using DocDexBot.Net.Extensions;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace DocDexBot.Net.Interactions;
 
@@ -107,46 +108,55 @@ public class SearchInteraction : InteractionModuleBase<SocketInteractionContext>
     public class SearchAutocompleteHandler : AutocompleteHandler
     {
         private readonly IDocDexApiClient apiClient;
+        private readonly IMemoryCache cache;
         private readonly ILogger<SearchAutocompleteHandler> logger;
 
-        public SearchAutocompleteHandler(IDocDexApiClient apiClient, ILogger<SearchAutocompleteHandler> logger)
+        public SearchAutocompleteHandler(IDocDexApiClient apiClient, IMemoryCache cache, ILogger<SearchAutocompleteHandler> logger)
         {
             this.apiClient = apiClient;
+            this.cache = cache;
             this.logger = logger;
         }
         
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
         {
             var javadoc = autocompleteInteraction.Data.Options.FirstOrDefault(n => n.Name == "javadoc")?.Value as string;
+            javadoc = string.IsNullOrWhiteSpace(javadoc) ? "gdx" : javadoc;
             var query = autocompleteInteraction.Data.Current.Value as string;
+            logger.LogInformation("Searching for {query} in {javadoc}", query, javadoc);
+            
             if (string.IsNullOrWhiteSpace(query))
                 return AutocompletionResult.FromSuccess();
 
-            var result = await apiClient.Search(string.IsNullOrWhiteSpace(javadoc) ? "gdx" : javadoc, query);
+            var result = await cache.GetOrCreateAsync($"{query}_{javadoc}", async _ => await apiClient.Search(javadoc, query));
             
-            return AutocompletionResult.FromSuccess(result.Select(o => new AutocompleteResult($"{GetFullName(o, true, false)} ({o.Object.Type})", GetFullName(o, true))).Take(25));
+            return AutocompletionResult.FromSuccess(result!.Select(o => new AutocompleteResult($"{GetFullName(o, true, false)} ({o.Object.Type})", GetFullName(o, true))).Take(25));
         }
     }
     
     public class JavadocAutocompleteHandler : AutocompleteHandler
     {
         private readonly IDocDexApiClient apiClient;
+        private readonly IMemoryCache cache;
         private readonly ILogger<JavadocAutocompleteHandler> logger;
 
-        public JavadocAutocompleteHandler(IDocDexApiClient apiClient, ILogger<JavadocAutocompleteHandler> logger)
+        public JavadocAutocompleteHandler(IDocDexApiClient apiClient, IMemoryCache cache, ILogger<JavadocAutocompleteHandler> logger)
         {
             this.apiClient = apiClient;
+            this.cache = cache;
             this.logger = logger;
         }
         
         public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
         {
-            var result = await apiClient.GetJavaDocs();
-            
             var query = autocompleteInteraction.Data.Current.Value as string;
+            logger.LogInformation("Listing JavaDocs for {javadoc}", query);
+
+            var result = (await cache.GetOrCreateAsync("javadocs", async _ => await apiClient.GetJavaDocs()))!;
+            
             if (!string.IsNullOrWhiteSpace(query))
                 result = result.Where(r => r.Names.Any(n => n.ToLower().Contains(query.ToLower()))).ToArray();
-                
+            
             return AutocompletionResult.FromSuccess(result.Select(o => new AutocompleteResult(o.Names.First(), o.Names.First())).Take(25));
         }
     }
