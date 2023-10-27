@@ -68,7 +68,7 @@ public partial class SearchInteraction : InteractionModuleBase<SocketInteraction
             .WithTitle(GetFullName(thing))
             .WithUrl(thing.Object.Link);
 
-        var description = string.IsNullOrWhiteSpace(thing.Object.Description) ? "" : $"**Description:**\n{htmlparser.ParseDescription(thing)}\n\n";
+        var description = string.IsNullOrWhiteSpace(thing.Object.Description) ? "" : $"**Description:**\n{htmlparser.ParseDescription(thing).SubstringIgnoreError(2048, true)}\n\n";
         var parameters = thing.Object.Metadata.ParameterDescriptions.Count > 0 ? $"**Parameters:**\n{string.Join("\n", thing.Object.Metadata.ParameterDescriptions.Select(p => $"`{p.Key}` - {p.Value}"))}\n" : "";
         switch (thing.Object.Type)
         {
@@ -90,14 +90,59 @@ public partial class SearchInteraction : InteractionModuleBase<SocketInteraction
                 if (thing.Object.Metadata.SubClasses.Count > 0)
                     embed.AddField("SubClasses", thing.Object.Metadata.SubClasses.Count, true);
 
-                embed.WithDescription("```java\n" +
-                                      $"{string.Join(" ", thing.Object.Modifiers)} class {thing.Object.Name}{extends}{implements} {{ }}\n" +
+                var className = "```java\n" +
+                           $"{string.Join(" ", thing.Object.Modifiers)} class {thing.Object.Name}{extends}{implements} {{ ";
+                var classLength = className.Length + description.Length + 10;
+                var classMethods = thing.Object.Metadata.Methods.Count == 0 ? "" : thing.Object.Metadata.Methods.Count > 1 ? "\n\tMethods: " : "\n\tMethod: ";
+                for (var i = 0; i < thing.Object.Metadata.Methods.Count; i++)
+                {
+                    var method = thing.Object.Metadata.Methods[i];
+                    method = method[(method.LastIndexOf("#", StringComparison.Ordinal) + 1)..];
+                    if (classLength + classMethods.Length < 4050)
+                        classMethods += (i > 0 ? ", " : "") + method;
+                }
+                if (!string.IsNullOrWhiteSpace(classMethods))
+                    classMethods += ";\n";
+
+                classLength += classMethods.Length;
+                var classFields = thing.Object.Metadata.Fields.Count == 0 ? "" : thing.Object.Metadata.Fields.Count > 1 ? "\n\tFields: " : "\n\tField: ";
+                for (var i = 0; i < thing.Object.Metadata.Fields.Count; i++)
+                {
+                    var field = thing.Object.Metadata.Fields[i];
+                    field = field[(field.LastIndexOf("%", StringComparison.Ordinal) + 1)..];
+                    if (classLength + classFields.Length < 4050)
+                        classFields += (i > 0 ? ", " : "") + field;
+                }
+
+                if (!string.IsNullOrWhiteSpace(classFields))
+                    classFields += ";\n";
+
+                embed.WithDescription(className +
+                                      classFields +
+                                      classMethods +
+                                      "}}\n" +
                                       "```\n" +
                                       description);
                 break;
             case "INTERFACE":
-                embed.WithDescription("```java\n" +
-                                      $"{string.Join(" ", thing.Object.Modifiers)} interface {thing.Object.Name} {{ }}\n" +
+                var interfaceName = "```java\n" +
+                           $"{string.Join(" ", thing.Object.Modifiers)} interface {thing.Object.Name} {{ ";
+                
+                var interfaceLength = interfaceName.Length + description.Length + 10;
+                var interfaceMethods = thing.Object.Metadata.Methods.Count == 0 ? "" : thing.Object.Metadata.Methods.Count > 1 ? "\n\tMethods: " : "\n\tMethod: ";
+                for (var i = 0; i < thing.Object.Metadata.Methods.Count; i++)
+                {
+                    var method = thing.Object.Metadata.Methods[i];
+                    method = method[(method.LastIndexOf("#", StringComparison.Ordinal) + 1)..];
+                    if (interfaceLength + interfaceMethods.Length < 4050)
+                        interfaceMethods += (i > 0 ? ", " : "") + method;
+                }
+                if (!string.IsNullOrWhiteSpace(interfaceMethods))
+                    interfaceMethods += ";\n";
+                
+                embed.WithDescription(interfaceName +
+                                      interfaceMethods + 
+                                      "}}\n" +
                                       "```\n" +
                                       description);
                 break;
