@@ -31,7 +31,6 @@ var host = Host.CreateDefaultBuilder(args)
         
         services.AddSingleton<DocDexDiscordClient>();
         
-        services.AddHostedService<Worker>();
         services.AddHostedService<DiscordClientWorker>();
         services.AddHostedService<InteractionsWorker>();
     })
