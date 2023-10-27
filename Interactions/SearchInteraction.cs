@@ -15,16 +15,18 @@ public partial class SearchInteraction : InteractionModuleBase<SocketInteraction
 {
     private readonly IDocDexApiClient apiClient;
     private readonly HtmlToDiscordParser htmlparser;
+    private readonly IMemoryCache cache;
     private readonly ILogger<SearchInteraction> logger;
     
     [GeneratedRegex("(?<search>.+)_(?<index>\\d+)")]
     private static partial Regex QueryRegex();
     private readonly Regex queryRegex = QueryRegex();
 
-    public SearchInteraction(IDocDexApiClient apiClient, HtmlToDiscordParser htmlparser, ILogger<SearchInteraction> logger)
+    public SearchInteraction(IDocDexApiClient apiClient, HtmlToDiscordParser htmlparser, IMemoryCache cache, ILogger<SearchInteraction> logger)
     {
         this.apiClient = apiClient;
         this.htmlparser = htmlparser;
+        this.cache = cache;
         this.logger = logger;
     }
 
@@ -41,9 +43,18 @@ public partial class SearchInteraction : InteractionModuleBase<SocketInteraction
         var match = queryRegex.Match(query);
         if (!match.Success)
         {
-            await RespondAsync("Please select an option via the autocomplete", ephemeral: true);
+            await RespondAsync("Please select the search query via the autocomplete", ephemeral: true);
             return;
         }
+        
+        javadoc = string.IsNullOrWhiteSpace(javadoc) ? "gdx" : javadoc;
+        var javadocsResult = (await cache.GetOrCreateAsync("javadocs", async _ => await apiClient.GetJavaDocs()))!;
+        if (!javadocsResult.Any(j => j.ActualLink.Contains(javadoc)))
+        {
+            await RespondAsync("Please select the javadoc via the autocomplete", ephemeral: true);
+            return;
+        }
+        
 
         var searchString = match.Groups["search"].Value;
         var index = Convert.ToInt32(match.Groups["index"].Value);
