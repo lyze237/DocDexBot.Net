@@ -16,4 +16,7 @@ public static class StringExtensions
             return str;
         }
     }
+
+    public static string ReplaceViaIndex(this string str, string with, int index, int length) => 
+        str[..index] + with + str[(index + length)..];
 }

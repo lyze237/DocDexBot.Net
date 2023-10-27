@@ -3,6 +3,7 @@ using Discord.Interactions;
 using Discord.WebSocket;
 using DocDexBot.Net;
 using DocDexBot.Net.Api;
+using DocDexBot.Net.Api.Parsers;
 using DocDexBot.Net.Options;
 using DocDexBot.Net.Workers;
 using Microsoft.Extensions.Options;
@@ -32,6 +33,7 @@ var host = Host.CreateDefaultBuilder(args)
             return interactionService;
         });
 
+        services.AddSingleton<HtmlToDiscordParser>();
         services.AddSingleton<IDocDexApiClient, DocDexApiClient>();
         
         services.AddSingleton<DocDexDiscordClient>();
