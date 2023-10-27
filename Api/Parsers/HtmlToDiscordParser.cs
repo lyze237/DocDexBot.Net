@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Security.AccessControl;
+using System.Text.RegularExpressions;
 using DocDexBot.Net.Api.Models;
 using DocDexBot.Net.Extensions;
 
@@ -12,6 +13,7 @@ public partial class HtmlToDiscordParser
     private readonly Regex boldRegex = BoldRegex();
     private readonly Regex italicsRegex = ItalicsRegex();
     private readonly Regex paragraphRegex = ParagraphRegex();
+    private readonly Regex listRegex = ListRegex();
     
     public string ParseDescription(SearchResult obj)
     {
@@ -34,6 +36,11 @@ public partial class HtmlToDiscordParser
         description = boldRegex.Replace(description, "**${innerhtml}**");
         description = italicsRegex.Replace(description, "*${innerhtml}*");
         description = paragraphRegex.Replace(description, "${innerhtml}\n");
+
+        description = description.Replace("<ul>", "\n").Replace("</ul>", "\n");
+        description = listRegex.Replace(description, "* ${innerhtml}");
+
+        Console.WriteLine(description);
         
         return description.Trim();
     }
@@ -52,4 +59,7 @@ public partial class HtmlToDiscordParser
     
     [GeneratedRegex("<p>(?<innerhtml>.*?)</p>")]
     private static partial Regex ParagraphRegex();
+    
+    [GeneratedRegex("\\s?<li>(?<innerhtml>.*?)</li>")]
+    private static partial Regex ListRegex();
 }
