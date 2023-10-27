@@ -1,5 +1,6 @@
 ﻿using System.Reactive.Linq;
 using System.Runtime.InteropServices.ComTypes;
+using System.Text.RegularExpressions;
 using Discord;
 using Discord.Interactions;
 using DocDexBot.Net.Api;
@@ -10,11 +11,15 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace DocDexBot.Net.Interactions;
 
-public class SearchInteraction : InteractionModuleBase<SocketInteractionContext>
+public partial class SearchInteraction : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly IDocDexApiClient apiClient;
     private readonly HtmlToDiscordParser htmlparser;
     private readonly ILogger<SearchInteraction> logger;
+    
+    [GeneratedRegex("(?<search>.+)_(?<index>\\d+)")]
+    private static partial Regex QueryRegex();
+    private readonly Regex queryRegex = QueryRegex();
 
     public SearchInteraction(IDocDexApiClient apiClient, HtmlToDiscordParser htmlparser, ILogger<SearchInteraction> logger)
     {
@@ -32,21 +37,31 @@ public class SearchInteraction : InteractionModuleBase<SocketInteractionContext>
     public async Task Search([Summary("Javadoc"), Autocomplete(typeof(JavadocAutocompleteHandler))] string javadoc, [Summary("Query"), Autocomplete(typeof(SearchAutocompleteHandler))] string query)
     {
         logger.LogInformation("User {user} searched for {query} in {javadoc}", Context.User.Username, query, javadoc);
+
+        var match = queryRegex.Match(query);
+        if (!match.Success)
+        {
+            await RespondAsync("Please select an option via the autocomplete", ephemeral: true);
+            return;
+        }
+
+        var searchString = match.Groups["search"].Value;
+        var index = Convert.ToInt32(match.Groups["index"].Value);
         
-        var result = await apiClient.Search(string.IsNullOrWhiteSpace(javadoc) ? "gdx" : javadoc, query);
+        var result = await apiClient.Search(string.IsNullOrWhiteSpace(javadoc) ? "gdx" : javadoc, searchString);
         
-        var thing = result.First();
+        var thing = result[index];
         logger.LogInformation("Found {amount} results for {query}; taking first one {thing}", result.Length, query, thing.Name);
 
         var embed = new EmbedBuilder()
             .WithTitle(GetFullName(thing))
             .WithUrl(thing.Object.Link);
 
-        var description = string.IsNullOrWhiteSpace(thing.Object.Description) ? "" : $"**Description:**\n{htmlparser.ParseDescription(thing)}\n";
+        var description = string.IsNullOrWhiteSpace(thing.Object.Description) ? "" : $"**Description:**\n{htmlparser.ParseDescription(thing)}\n\n";
+        var parameters = thing.Object.Metadata.ParameterDescriptions.Count > 0 ? $"**Parameters:**\n{string.Join("\n", thing.Object.Metadata.ParameterDescriptions.Select(p => $"`{p.Key}` - {p.Value}"))}\n" : "";
         switch (thing.Object.Type)
         {
             case "METHOD":
-                var parameters = thing.Object.Metadata.ParameterDescriptions.Count > 0 ? $"**Parameters:**\n{string.Join("\n", thing.Object.Metadata.ParameterDescriptions.Select(p => $"`{p.Key}` - {p.Value}"))}\n" : "";
                 embed.WithDescription("```java\n" +
                                       $"{thing.Object.Metadata.Returns} {thing.Object.Name}({string.Join(", ", thing.Object.Metadata.Parameters)}) {{ }}\n" +
                                       "```\n" +
@@ -66,16 +81,23 @@ public class SearchInteraction : InteractionModuleBase<SocketInteractionContext>
                     embed.AddField("SubClasses", thing.Object.Metadata.SubClasses.Count, true);
 
                 embed.WithDescription("```java\n" +
-                                      $"{string.Join(" ", thing.Object.Modifiers)} class {thing.Object.Name}{extends}{implements}\n" +
+                                      $"{string.Join(" ", thing.Object.Modifiers)} class {thing.Object.Name}{extends}{implements} {{ }}\n" +
                                       "```\n" +
                                       description);
                 break;
             }
             case "FIELD":
                 embed.WithDescription("```java\n" +
-                                      $"{string.Join("", thing.Object.Modifiers)} {thing.Object.Metadata.Returns} {thing.Object.Name}\n" +
+                                      $"{string.Join(" ", thing.Object.Modifiers)} {thing.Object.Metadata.Returns} {thing.Object.Name};\n" +
                                       "```\n" +
                                       description);
+                break;
+            case "CONSTRUCTOR":
+                embed.WithDescription("```java\n" +
+                                      $"{string.Join(" ", thing.Object.Modifiers)} {thing.Object.Name} {{ }}\n" +
+                                      "```\n" +
+                                      description + 
+                                      parameters);
                 break;
             default:
                 await RespondAsync($"Type {thing.Object.Type} not supported yet");
@@ -94,15 +116,14 @@ public class SearchInteraction : InteractionModuleBase<SocketInteractionContext>
     private static string GetFullName(SearchResult thing, bool withParameters = false, bool withPackage = true)
     {
         var package = withPackage ? $"{thing.Object.Package}." : "";
-        var name = thing.Object.Type switch
+        return thing.Object.Type switch
         {
             "METHOD" => $"{package}{thing.Object.Metadata.Owner}#{thing.Object.Name}{(withParameters ? $"({string.Join(", ", thing.Object.Metadata.Parameters)})" : "")}",
             "CLASS" => $"{package}{thing.Object.Name}",
             "FIELD" => $"{package}{thing.Object.Metadata.Owner}%{thing.Object.Name}",
+            "CONSTRUCTOR" => $"{package}{thing.Object.Metadata.Owner}#{thing.Object.Name}{(withParameters ? $"({string.Join(", ", thing.Object.Metadata.Parameters)})" : "")}",
             _ => thing.Name
         };
-
-        return name.SubstringIgnoreError(80, true);
     }
 
     public class SearchAutocompleteHandler : AutocompleteHandler
@@ -130,7 +151,7 @@ public class SearchInteraction : InteractionModuleBase<SocketInteractionContext>
 
             var result = await cache.GetOrCreateAsync($"{query}_{javadoc}", async _ => await apiClient.Search(javadoc, query));
             
-            return AutocompletionResult.FromSuccess(result!.Select(o => new AutocompleteResult($"{GetFullName(o, true, false)} ({o.Object.Type})", GetFullName(o, true))).Take(25));
+            return AutocompletionResult.FromSuccess(result!.Select((o, i) => new AutocompleteResult($"{GetFullName(o, true, false).SubstringIgnoreError(80, true)} ({o.Object.Type})", $"{query}_{i}")).Take(25));
         }
     }
     
