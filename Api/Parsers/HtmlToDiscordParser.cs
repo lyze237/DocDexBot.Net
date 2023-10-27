@@ -33,7 +33,7 @@ public partial class HtmlToDiscordParser
         description = codeRegex.Replace(description, "`${innerhtml}`");
         description = boldRegex.Replace(description, "**${innerhtml}**");
         description = italicsRegex.Replace(description, "*${innerhtml}*");
-        description = paragraphRegex.Replace(description, "${innerhtml}\n\n");
+        description = paragraphRegex.Replace(description, "${innerhtml}\n");
         
         return description.Trim();
     }
