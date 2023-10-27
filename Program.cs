@@ -2,8 +2,11 @@ using Discord;
 using Discord.Interactions;
 using Discord.WebSocket;
 using DocDexBot.Net;
+using DocDexBot.Net.Api;
 using DocDexBot.Net.Options;
 using DocDexBot.Net.Workers;
+using Microsoft.Extensions.Options;
+using RestSharp;
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
@@ -28,6 +31,8 @@ var host = Host.CreateDefaultBuilder(args)
             
             return interactionService;
         });
+
+        services.AddSingleton<IDocDexApiClient, DocDexApiClient>();
         
         services.AddSingleton<DocDexDiscordClient>();
         
