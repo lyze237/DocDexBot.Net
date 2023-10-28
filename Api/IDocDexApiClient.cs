@@ -6,5 +6,5 @@ public interface IDocDexApiClient
 {
     Task<Javadoc[]> GetJavaDocs();
 
-    Task<SearchResult[]> Search(string javadoc, string query);
+    Task<SearchResult[]> Search(string javadoc, string query, int limit = 10);
 }

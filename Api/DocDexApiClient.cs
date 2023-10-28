@@ -24,15 +24,15 @@ public class DocDexApiClient : IDocDexApiClient, IDisposable
         return response!;
     }
 
-    public async Task<SearchResult[]> Search(string javadoc, string query)
+    public async Task<SearchResult[]> Search(string javadoc, string query, int limit = 10)
     {
         logger.LogInformation("Querying Search api with {query} in {javadoc}", query, javadoc);
         
         query = query.Replace("%", "-").Replace("#", "~");
         
-        var response = await client.GetJsonAsync<SearchResult[]>($"index?javadoc={javadoc}&query={query}", new
+        var response = await client.GetJsonAsync<SearchResult[]>($"index?javadoc={javadoc}&limit={limit}&query={query}", new
         {
-            javadoc, query
+            javadoc, query, limit
         });
 
         return response!;
