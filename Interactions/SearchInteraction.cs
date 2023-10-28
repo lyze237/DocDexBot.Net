@@ -6,7 +6,9 @@ using Discord.Interactions;
 using DocDexBot.Net.Api;
 using DocDexBot.Net.Api.Models;
 using DocDexBot.Net.Api.Parsers;
+using DocDexBot.Net.Builders;
 using DocDexBot.Net.Extensions;
+using DocDexBot.Net.Interactions.AutocompleteHandlers;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace DocDexBot.Net.Interactions;
@@ -54,7 +56,6 @@ public partial class SearchInteraction : InteractionModuleBase<SocketInteraction
             await RespondAsync("Please select the javadoc via the autocomplete", ephemeral: true);
             return;
         }
-        
 
         var searchString = match.Groups["search"].Value;
         var index = Convert.ToInt32(match.Groups["index"].Value);
@@ -64,189 +65,17 @@ public partial class SearchInteraction : InteractionModuleBase<SocketInteraction
         var thing = result[index];
         logger.LogInformation("Found {amount} results for {query}; taking first one {thing}", result.Length, query, thing.Name);
 
-        var embed = new EmbedBuilder()
-            .WithTitle(GetFullName(thing))
-            .WithUrl(thing.Object.Link);
-
-        var description = string.IsNullOrWhiteSpace(thing.Object.Description) ? "" : $"**Description:**\n{htmlparser.ParseDescription(thing).SubstringIgnoreError(2048, true)}\n\n";
-        var parameters = thing.Object.Metadata.ParameterDescriptions.Count > 0 ? $"**Parameters:**\n{string.Join("\n", thing.Object.Metadata.ParameterDescriptions.Select(p => $"`{p.Key}` - {p.Value}"))}\n" : "";
-        switch (thing.Object.Type)
+        var embed = thing.Object.Type switch
         {
-            case "METHOD":
-                embed.WithDescription("```java\n" +
-                                      $"{thing.Object.Metadata.Returns} {thing.Object.Name}({string.Join(", ", thing.Object.Metadata.Parameters)}) {{ }}\n" +
-                                      "```\n" +
-                                      description +
-                                      parameters);
-                break;
-            case "CLASS":
-                var extends = thing.Object.Metadata.Extensions.Contains("java.lang.Object") ? "" : $" extends {string.Join(", ", RemovePackage(thing.Object.Metadata.Extensions))}";
-                var implements = thing.Object.Metadata.Implementations.Count == 0 ? "" : $" implements {string.Join(", ", RemovePackage(thing.Object.Metadata.Implementations))}";
-
-                if (thing.Object.Metadata.Methods.Count > 0)
-                    embed.AddField("Methods", thing.Object.Metadata.Methods.Count, true);
-                if (thing.Object.Metadata.Fields.Count > 0)
-                    embed.AddField("Fields", thing.Object.Metadata.Fields.Count, true);
-                if (thing.Object.Metadata.SubClasses.Count > 0)
-                    embed.AddField("SubClasses", thing.Object.Metadata.SubClasses.Count, true);
-
-                var className = "```java\n" +
-                           $"{string.Join(" ", thing.Object.Modifiers)} class {thing.Object.Name}{extends}{implements} {{ ";
-                var classLength = className.Length + description.Length + 10;
-                var classMethods = thing.Object.Metadata.Methods.Count == 0 ? "" : thing.Object.Metadata.Methods.Count > 1 ? "\n\tMethods: " : "\n\tMethod: ";
-                for (var i = 0; i < thing.Object.Metadata.Methods.Count; i++)
-                {
-                    var method = thing.Object.Metadata.Methods[i];
-                    method = method[(method.LastIndexOf("#", StringComparison.Ordinal) + 1)..];
-                    if (classLength + classMethods.Length < 4050)
-                        classMethods += (i > 0 ? ", " : "") + method;
-                }
-                if (!string.IsNullOrWhiteSpace(classMethods))
-                    classMethods += ";\n";
-
-                classLength += classMethods.Length;
-                var classFields = thing.Object.Metadata.Fields.Count == 0 ? "" : thing.Object.Metadata.Fields.Count > 1 ? "\n\tFields: " : "\n\tField: ";
-                for (var i = 0; i < thing.Object.Metadata.Fields.Count; i++)
-                {
-                    var field = thing.Object.Metadata.Fields[i];
-                    field = field[(field.LastIndexOf("%", StringComparison.Ordinal) + 1)..];
-                    if (classLength + classFields.Length < 4050)
-                        classFields += (i > 0 ? ", " : "") + field;
-                }
-
-                if (!string.IsNullOrWhiteSpace(classFields))
-                    classFields += ";\n";
-
-                embed.WithDescription(className +
-                                      classFields +
-                                      classMethods +
-                                      "}}\n" +
-                                      "```\n" +
-                                      description);
-                break;
-            case "INTERFACE":
-                var interfaceName = "```java\n" +
-                           $"{string.Join(" ", thing.Object.Modifiers)} interface {thing.Object.Name} {{ ";
-                
-                var interfaceLength = interfaceName.Length + description.Length + 10;
-                var interfaceMethods = thing.Object.Metadata.Methods.Count == 0 ? "" : thing.Object.Metadata.Methods.Count > 1 ? "\n\tMethods: " : "\n\tMethod: ";
-                for (var i = 0; i < thing.Object.Metadata.Methods.Count; i++)
-                {
-                    var method = thing.Object.Metadata.Methods[i];
-                    method = method[(method.LastIndexOf("#", StringComparison.Ordinal) + 1)..];
-                    if (interfaceLength + interfaceMethods.Length < 4050)
-                        interfaceMethods += (i > 0 ? ", " : "") + method;
-                }
-                if (!string.IsNullOrWhiteSpace(interfaceMethods))
-                    interfaceMethods += ";\n";
-                
-                embed.WithDescription(interfaceName +
-                                      interfaceMethods + 
-                                      "}}\n" +
-                                      "```\n" +
-                                      description);
-                break;
-            case "ENUM":
-                embed.WithDescription("```java\n" +
-                                      $"{string.Join(" ", thing.Object.Modifiers)} enum {thing.Object.Name} {{ \n\t{string.Join(", ", thing.Object.Metadata.Fields.Select(f => f[(f.LastIndexOf("%", StringComparison.Ordinal) + 1)..]))} \n}}\n" +
-                                      "```\n" +
-                                      description);
-                break;
-            case "FIELD":
-                embed.WithDescription("```java\n" +
-                                      $"{string.Join(" ", thing.Object.Modifiers)} {thing.Object.Metadata.Returns} {thing.Object.Name};\n" +
-                                      "```\n" +
-                                      description);
-                break;
-            case "CONSTRUCTOR":
-                embed.WithDescription("```java\n" +
-                                      $"{string.Join(" ", thing.Object.Modifiers)}({string.Join(", ", thing.Object.Metadata.Parameters)}) {thing.Object.Name} {{ }}\n" +
-                                      "```\n" +
-                                      description + 
-                                      parameters);
-                break;
-            default:
-                await RespondAsync($"Type {thing.Object.Type} not supported yet");
-                return;
-        }
+            "METHOD" => new MethodBuilder(thing.Object).Build(),
+            "CLASS" => new ClassBuilder(thing.Object).Build(),
+            "INTERFACE" => new InterfaceBuilder(thing.Object).Build(),
+            "ENUM" => new EnumBuilder(thing.Object).Build(),
+            "FIELD" => new FieldBuilder(thing.Object).Build(),
+            "CONSTRUCTOR" => new ConstructorBuilder(thing.Object).Build(),
+            _ => throw new ArgumentOutOfRangeException($"Type {thing.Object.Type} not supported yet")
+        };
 
         await RespondAsync("", new []{embed.Build()});
-    }
-
-    private static IEnumerable<string> RemovePackage(IEnumerable<string> names) =>
-        names.Select(RemovePackage).ToList();
-
-    private static string RemovePackage(string name) => 
-        name.Contains('.') ? name[(name.LastIndexOf('.') + 1)..] : name;
-
-    private static string GetFullName(SearchResult thing, bool withParameters = false, bool withPackage = true)
-    {
-        var package = withPackage ? $"{thing.Object.Package}." : "";
-        return thing.Object.Type switch
-        {
-            "METHOD" => $"{package}{thing.Object.Metadata.Owner}#{thing.Object.Name}{(withParameters ? $"({string.Join(", ", thing.Object.Metadata.Parameters)})" : "")}",
-            "CLASS" => $"{package}{thing.Object.Name}",
-            "INTERFACE" => $"{package}{thing.Object.Name}",
-            "ENUM" => $"{package}{thing.Object.Name}",
-            "FIELD" => $"{package}{thing.Object.Metadata.Owner}%{thing.Object.Name}",
-            "CONSTRUCTOR" => $"{package}{thing.Object.Metadata.Owner}#{thing.Object.Name}{(withParameters ? $"({string.Join(", ", thing.Object.Metadata.Parameters)})" : "")}",
-            _ => thing.Name
-        };
-    }
-
-    public class SearchAutocompleteHandler : AutocompleteHandler
-    {
-        private readonly IDocDexApiClient apiClient;
-        private readonly IMemoryCache cache;
-        private readonly ILogger<SearchAutocompleteHandler> logger;
-
-        public SearchAutocompleteHandler(IDocDexApiClient apiClient, IMemoryCache cache, ILogger<SearchAutocompleteHandler> logger)
-        {
-            this.apiClient = apiClient;
-            this.cache = cache;
-            this.logger = logger;
-        }
-        
-        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
-        {
-            var javadoc = autocompleteInteraction.Data.Options.FirstOrDefault(n => n.Name == "javadoc")?.Value as string;
-            javadoc = string.IsNullOrWhiteSpace(javadoc) ? "gdx" : javadoc;
-            var query = autocompleteInteraction.Data.Current.Value as string;
-            logger.LogInformation("Searching for {query} in {javadoc}", query, javadoc);
-            
-            if (string.IsNullOrWhiteSpace(query))
-                return AutocompletionResult.FromSuccess();
-
-            var result = await cache.GetOrCreateAsync($"{query}_{javadoc}", async _ => await apiClient.Search(javadoc, query));
-            
-            return AutocompletionResult.FromSuccess(result!.Select((o, i) => new AutocompleteResult($"{GetFullName(o, true, false).SubstringIgnoreError(75, true)} ({o.Object.Type}{(o.Object.Metadata.Parameters.Count > 0 ? $", {o.Object.Metadata.Parameters.Count} Params" : "")})", $"{query}_{i}")).Take(25));
-        }
-    }
-    
-    public class JavadocAutocompleteHandler : AutocompleteHandler
-    {
-        private readonly IDocDexApiClient apiClient;
-        private readonly IMemoryCache cache;
-        private readonly ILogger<JavadocAutocompleteHandler> logger;
-
-        public JavadocAutocompleteHandler(IDocDexApiClient apiClient, IMemoryCache cache, ILogger<JavadocAutocompleteHandler> logger)
-        {
-            this.apiClient = apiClient;
-            this.cache = cache;
-            this.logger = logger;
-        }
-        
-        public override async Task<AutocompletionResult> GenerateSuggestionsAsync(IInteractionContext context, IAutocompleteInteraction autocompleteInteraction, IParameterInfo parameter, IServiceProvider services)
-        {
-            var query = autocompleteInteraction.Data.Current.Value as string;
-            logger.LogInformation("Listing JavaDocs for {javadoc}", query);
-
-            var result = (await cache.GetOrCreateAsync("javadocs", async _ => await apiClient.GetJavaDocs()))!;
-            
-            if (!string.IsNullOrWhiteSpace(query))
-                result = result.Where(r => r.Names.Any(n => n.ToLower().Contains(query.ToLower()))).ToArray();
-            
-            return AutocompletionResult.FromSuccess(result.Select(o => new AutocompleteResult(o.Names.First(), o.Names.First())).Take(25));
-        }
     }
 }

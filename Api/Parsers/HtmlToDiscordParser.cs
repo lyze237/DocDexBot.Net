@@ -15,9 +15,9 @@ public partial class HtmlToDiscordParser
     private readonly Regex paragraphRegex = ParagraphRegex();
     private readonly Regex listRegex = ListRegex();
     
-    public string ParseDescription(SearchResult obj)
+    public string ParseDescription(ObjectModel obj)
     {
-        var description = obj.Object.Description;
+        var description = obj.Description;
         
         var matches = anchorRegex.Matches(description);
         for (var index = matches.Count - 1; index >= 0; index--)
@@ -25,7 +25,7 @@ public partial class HtmlToDiscordParser
             var match = matches[index];
 
             var href = match.Groups["href"].Value;
-            var uri = new Uri(new Uri(obj.Object.Link), href);
+            var uri = new Uri(new Uri(obj.Link), href);
 
             description = description.ReplaceViaIndex($"[{match.Groups["innerhtml"].Value}]({uri.AbsoluteUri})", match.Index, match.Length);
         }
@@ -37,7 +37,7 @@ public partial class HtmlToDiscordParser
         description = italicsRegex.Replace(description, "*${innerhtml}*");
         description = paragraphRegex.Replace(description, "${innerhtml}\n");
 
-        description = description.Replace("<ul>", "\n").Replace("</ul>", "\n");
+        description = description.Replace("<ul>", "").Replace("</ul>", "\n");
         description = listRegex.Replace(description, "* ${innerhtml}");
 
         Console.WriteLine(description);
