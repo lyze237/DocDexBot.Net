@@ -59,6 +59,8 @@ public abstract class ObjectBuilder
             fullDescription = GenerateJavaBlock(methods, fields);
             fullDescription += ParsedDescription.SubstringIgnoreError(2048, true);
             fullDescription += string.Join("\n", GetTrimmedParameterDescriptions).SubstringIgnoreError(1024, true);
+            if (!string.IsNullOrWhiteSpace(Model.Metadata.ReturnsDescription))
+                fullDescription += string.Join("\n", "Returns " + Model.Metadata.ReturnsDescription).SubstringIgnoreError(128, true);
 
             fields = Math.Max(fields - 1, 0);
             methods = Math.Max(methods - 1, 0);

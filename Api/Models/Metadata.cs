@@ -14,13 +14,13 @@ public class Metadata
 
     [JsonPropertyName("sub_interfaces")] public IReadOnlyList<string> SubInterfaces { get; set; }
 
-    [JsonPropertyName("sub_classes")] public IReadOnlyList<string> SubClasses { get; set; }
+    [JsonPropertyName("sub_classes")] public IReadOnlyList<string> SubClasses { get; set; } = new List<string>();
 
     [JsonPropertyName("implementing_classes")] public IReadOnlyList<string> ImplementingClasses { get; set; }
 
-    [JsonPropertyName("methods")] public IReadOnlyList<string> Methods { get; set; }
+    [JsonPropertyName("methods")] public IReadOnlyList<string> Methods { get; set; } = new List<string>();
 
-    [JsonPropertyName("fields")] public IReadOnlyList<string> Fields { get; set; }
+    [JsonPropertyName("fields")] public IReadOnlyList<string> Fields { get; set; } = new List<string>();
 
     [JsonPropertyName("owner")] public string Owner { get; set; }
 
