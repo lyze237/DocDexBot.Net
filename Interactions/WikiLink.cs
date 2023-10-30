@@ -1,4 +1,6 @@
-﻿namespace DocDexBot.Net.Interactions;
+﻿using System.Web;
+
+namespace DocDexBot.Net.Interactions;
 
 public class WikiLink
 {
@@ -23,7 +25,7 @@ public class WikiLink
 
     public string GetFullName()
     {
-        var name = Name;
+        var name = HttpUtility.HtmlDecode(Name);
 
         var parent = Parent;
         while (parent != null)
