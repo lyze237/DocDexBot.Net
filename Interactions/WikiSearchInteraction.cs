@@ -32,8 +32,9 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
         var sectionIndex = isHeader ? null : sectionSplit[2];
         var sectionHeader = isHeader ? null : sectionSplit[3];
         
-        var entry = (await wikiApiClient.GetMainWikiPageLinks())[pageNumber];
-        var entryHref = entry.Attributes["href"].Value;
+        var wikiLinks = await wikiApiClient.GetMainWikiPageWikiLinks();
+        var entry = wikiLinks.SelectMany(w => w.GetAllChildren()).ToList()[pageNumber];
+        var entryHref = entry.Link!;
 
         var mdPage = await wikiApiClient.GetMarkdownPage(entryHref);
 

@@ -1,4 +1,5 @@
 ﻿using DocDexBot.Net.Extensions;
+using DocDexBot.Net.Interactions;
 using DocDexBot.Net.Options;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Caching.Memory;
@@ -26,9 +27,26 @@ public class WikiApiClient : IWikiApiClient
     public async Task<HtmlDocument> GetMainWikiPage() =>
         (await cache.GetOrCreateAsync("wikiurl", async _ => await webClient.LoadFromWebAsync(wikiUrl.ToString())))!;
     
-    public async Task<HtmlNode[]> GetMainWikiPageLinks() =>
+    public async Task<HtmlNode[]> GetMainWikiPageAnchors() =>
         (await GetMainWikiPage()).DocumentNode.SelectNodes("//section[contains(@class, 'page__content')]//li/a")!.ToArray();
 
+    public async Task<HtmlNode[]> GetMainWikiPageList() =>
+        (await GetMainWikiPage()).DocumentNode.SelectNodes("//section[contains(@class, 'page__content')]/ul/li")!.ToArray();
+
+    public async Task<WikiLink[]> GetMainWikiPageWikiLinks() =>
+        (await GetMainWikiPageList())
+        .Select(MapHtmlNodeToWikiLink)
+        .ToArray();
+
+    private WikiLink MapHtmlNodeToWikiLink(HtmlNode node)
+    {
+        var link = new WikiLink(node.SelectSingleNode("a")?.InnerText ?? node.InnerText, node.SelectSingleNode("a")?.Attributes["href"].Value);
+        
+        link.AddChildren(node.SelectNodes("ul/li")?.Select(MapHtmlNodeToWikiLink) ?? new List<WikiLink>());
+
+        return link;
+    }
+    
     public async Task<HtmlDocument> GetWikiPage(string href) => 
         (await cache.GetOrCreateAsync($"wiki_{href}_html", async _ => await webClient.LoadFromWebAsync(wikiUrl.GetAbsoluteUrlString(href))))!;
     

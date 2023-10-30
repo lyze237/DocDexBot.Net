@@ -6,10 +6,19 @@ public static class StringExtensions
     {
         try
         {
-            if (append3Dots)
-                return str[..(length - 4)] + "...";
-            
-            return str[..length];
+            return append3Dots ? $"{str[..(length - 4)]}..." : str[..length];
+        }
+        catch (Exception)
+        {
+            return str;
+        }
+    }
+    
+    public static string SubstringIgnoreErrorFromBack(this string str, int length, bool append3Dots = false)
+    {
+        try
+        {
+            return append3Dots ? $"...{str[^(length - 4)..]}" : str[^length..];
         }
         catch (Exception)
         {

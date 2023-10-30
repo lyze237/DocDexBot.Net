@@ -20,10 +20,11 @@ public class WikiSearchSectionAutocompleteHandler : AutocompleteHandler
     {
         var pageNumberString = autocompleteInteraction.Data.Options.FirstOrDefault(n => n.Name == "page")?.Value as string;
         var pageNumber = Convert.ToInt32(pageNumberString);
-        
-        var entry = (await wikiApiClient.GetMainWikiPageLinks())[pageNumber];
-        
-        var (sections, header) = await wikiApiClient.GetWikiPageSections(entry.Attributes["href"].Value);
+
+        var wikiLinks = await wikiApiClient.GetMainWikiPageWikiLinks();
+        var entry = wikiLinks.SelectMany(w => w.GetAllChildren()).ToList()[pageNumber];
+
+        var (sections, header) = await wikiApiClient.GetWikiPageSections(entry.Link!);
         
         var section = autocompleteInteraction.Data.Current.Value as string;
 
