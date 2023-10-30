@@ -35,8 +35,13 @@ public class WikiLink
         return name;
     }
 
-    public List<WikiLink> GetAllChildren() => 
-        GetAllChildren(this);
+    public List<WikiLink> GetAllChildren()
+    {
+        var allChildren = GetAllChildren(this);
+        allChildren.Add(this);
+        
+        return allChildren;
+    }
 
     private static List<WikiLink> GetAllChildren(WikiLink currentNode)
     {

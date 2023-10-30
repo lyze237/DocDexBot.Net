@@ -28,8 +28,6 @@ public partial class DiscordTextFixer : IDiscordTextFixer
         html = html.Replace("<ul>", "").Replace("</ul>", "\n");
         html = ListRegex().Replace(html, "* ${innerhtml}");
 
-        Console.WriteLine(html);
-        
         html = CleanupMultilinesRegex().Replace(html, "\n");
         
         return html.Trim();
@@ -56,7 +54,6 @@ public partial class DiscordTextFixer : IDiscordTextFixer
         md = MdIncludeRegex().Replace(md, "");
         md = MdNoticeRegex().Replace(md, "");
         md = MdHeaderRegex().Replace(md, "### ");
-        Console.WriteLine(md);
 
         md = CleanupMultilinesRegex().Replace(md, "\n");
         return (md, images);
