@@ -86,6 +86,6 @@ public partial class DiscordTextFixer : IDiscordTextFixer
     [GeneratedRegex(@"{: \..*?}")]
     private static partial Regex MdNoticeRegex();
     
-    [GeneratedRegex(@"^(#){4,} ")]
+    [GeneratedRegex(@"^(#){4,} ", RegexOptions.Multiline)]
     private static partial Regex MdHeaderRegex();
 }
