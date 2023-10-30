@@ -21,7 +21,7 @@ public abstract class ObjectBuilder
         Model.Metadata.ParameterDescriptions.Select(p => $"`{p.Key}` - {p.Value}");
 
     public string ParsedDescription =>
-        DiscordParser.ParseDescription(Model);
+        DiscordParser.ParseDescription(new Uri(Model.Link), Model.Description);
     
     protected ObjectBuilder(ObjectModel model) => 
         Model = model;
