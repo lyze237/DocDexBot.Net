@@ -34,7 +34,7 @@ public class WikiSearchSectionAutocompleteHandler : AutocompleteHandler
             .Take(24)
             .ToList();
         
-        autocompleteResults.Insert(0, new AutocompleteResult("Header", pageNumberString));
+        autocompleteResults.Insert(0, new AutocompleteResult("Header", $"{pageNumberString}~{header}"));
         return AutocompletionResult.FromSuccess(autocompleteResults);
     }
 }

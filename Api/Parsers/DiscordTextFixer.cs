@@ -35,8 +35,9 @@ public partial class DiscordTextFixer : IDiscordTextFixer
         return html.Trim();
     }
 
-    public string ParseMd(Uri baseUri, string md)
+    public (string md, List<string> images) ParseMd(Uri baseUri, string md)
     {
+        var images = new List<string>();
         var matches = MdLinkRegex().Matches(md);
         for (var i = matches.Count - 1; i >= 0; i--)
         {
@@ -44,6 +45,9 @@ public partial class DiscordTextFixer : IDiscordTextFixer
 
             var href = match.Groups["link"].Value;
             var uri = new Uri(baseUri, href);
+
+            if (match.Groups["isimage"].Success) 
+                images.Add(uri.ToString());
 
             md = md.ReplaceViaIndex($"[{match.Groups["text"].Value}]({uri.AbsoluteUri})", match.Index, match.Length);
         }
@@ -54,7 +58,7 @@ public partial class DiscordTextFixer : IDiscordTextFixer
         Console.WriteLine(md);
 
         md = CleanupMultilinesRegex().Replace(md, "\n");
-        return md;
+        return (md, images);
     }
 
     [GeneratedRegex("<a(\\s*)href=\\\"(?<href>.*?)\\\".*?>(?<innerhtml>.*?)<\\/a>")]
@@ -77,7 +81,7 @@ public partial class DiscordTextFixer : IDiscordTextFixer
     [GeneratedRegex(@"(^\p{Zs}*(\r\n|\n)){2,}", RegexOptions.Multiline)]
     private static partial Regex CleanupMultilinesRegex();
 
-    [GeneratedRegex(@"\[(?<text>.*?)\]\((?<link>.*?)\)")]
+    [GeneratedRegex(@"(?<isimage>!)?\[(?<text>.*?)\]\((?<link>.*?)\)")]
     private static partial Regex MdLinkRegex();
 
     [GeneratedRegex("{% .*? %}")]

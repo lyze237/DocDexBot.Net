@@ -25,12 +25,12 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
     {
         var pageNumber = Convert.ToInt32(pageNumberString);
 
-        var isHeader = !section.Contains('~');
+        var isHeader = section.Count(c => c == '~') != 3;
         var sectionSplit = section.Split("~");
         var sectionId = isHeader ? null : sectionSplit[1];
         var sectionAnchor = isHeader ? "" : $"#{sectionId}";
         var sectionIndex = isHeader ? null : sectionSplit[2];
-        var sectionHeader = isHeader ? null : sectionSplit[3];
+        var sectionHeader = isHeader ? sectionSplit[1] : sectionSplit[3];
         
         var wikiLinks = await wikiApiClient.GetMainWikiPageWikiLinks();
         var entry = wikiLinks.SelectMany(w => w.GetAllChildren()).ToList()[pageNumber];
@@ -71,11 +71,16 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
             }
         }
 
+        var parsed = discordTextFixer.ParseMd(wikiApiClient.GetWikiUrl(), text);
+        
         var embed = new EmbedBuilder()
             .WithTitle(title.Trim('"'))
             .WithUrl(wikiApiClient.GetWikiUrl().GetAbsoluteUrlString($"{entryHref}{sectionAnchor}"))
             .WithColor(Color.DarkMagenta)
-            .WithDescription(discordTextFixer.ParseMd(wikiApiClient.GetWikiUrl(), text).SubstringIgnoreError(3072, true));
+            .WithDescription(parsed.md.SubstringIgnoreError(3072, true));
+
+        if (parsed.images.Count > 0)
+            embed.WithImageUrl(parsed.images.First());
         
         await RespondAsync("", embed: embed.Build());
     }
