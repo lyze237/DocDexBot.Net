@@ -52,6 +52,7 @@ public partial class DiscordTextFixer : IDiscordTextFixer
             md = md.ReplaceViaIndex($"[{match.Groups["text"].Value}]({uri.AbsoluteUri})", match.Index, match.Length);
         }
 
+        md = MdFixStrangeTitle().Replace(md, "## ${title}");
         md = MdIncludeRegex().Replace(md, "");
         md = MdNoticeRegex().Replace(md, "");
         md = MdHeaderRegex().Replace(md, "### ");
@@ -92,4 +93,6 @@ public partial class DiscordTextFixer : IDiscordTextFixer
     
     [GeneratedRegex(@"^(#){4,} ", RegexOptions.Multiline)]
     private static partial Regex MdHeaderRegex();
+    [GeneratedRegex("^(?<title>.*?)\\n-----$", RegexOptions.Multiline)]
+    private static partial Regex MdFixStrangeTitle();
 }

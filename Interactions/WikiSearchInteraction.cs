@@ -23,6 +23,7 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
     [SlashCommand("wiki", "Searches through the libGDX Wiki")]
     public async Task Search([Summary("Page"), Autocomplete(typeof(WikiSearchAutocompleteHandler))] string pageNumberString, [Summary("Section"), Autocomplete(typeof(WikiSearchSectionAutocompleteHandler))] string section)
     {
+        await DeferAsync();
         var pageNumber = Convert.ToInt32(pageNumberString);
 
         var isHeader = section.Count(c => c == '~') != 3;
@@ -38,10 +39,12 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
 
         var mdPage = await wikiApiClient.GetMarkdownPage(entryHref);
 
-        var lines = mdPage.Text.Split("\n");
+        var parsed = discordTextFixer.ParseMd(wikiApiClient.GetWikiUrl(), mdPage.Text);
+        
+        var lines = parsed.md.Split("\n");
         var currentTitle = -1;
         var tripleLine = 0;
-
+        
         var text = "";
         var title = "";
         foreach (var line in lines)
@@ -70,16 +73,14 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
                     break;
             }
         }
-
-        var parsed = discordTextFixer.ParseMd(wikiApiClient.GetWikiUrl(), text);
-
+        
         var embeds = new List<Embed>();
         
         var embed = new EmbedBuilder()
             .WithTitle(title.Trim('"'))
             .WithUrl(wikiApiClient.GetWikiUrl().GetAbsoluteUrlString($"{entryHref}{sectionAnchor}"))
             .WithColor(Color.DarkMagenta)
-            .WithDescription(parsed.md.SubstringIgnoreError(3072, true));
+            .WithDescription(text.SubstringIgnoreError(3072, true));
 
         if (parsed.images.Count > 0)
             embed.WithImageUrl(parsed.images.First());
@@ -90,6 +91,6 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
             .WithUrl(embed.Url)
             .WithImageUrl(otherImage).Build()));
 
-        await RespondAsync("", embeds: embeds.ToArray());
+        await FollowupAsync("", embeds: embeds.ToArray());
     }
 }
