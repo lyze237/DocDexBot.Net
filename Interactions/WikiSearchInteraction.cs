@@ -72,6 +72,8 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
         }
 
         var parsed = discordTextFixer.ParseMd(wikiApiClient.GetWikiUrl(), text);
+
+        var embeds = new List<Embed>();
         
         var embed = new EmbedBuilder()
             .WithTitle(title.Trim('"'))
@@ -82,6 +84,12 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
         if (parsed.images.Count > 0)
             embed.WithImageUrl(parsed.images.First());
         
-        await RespondAsync("", embed: embed.Build());
+        embeds.Add(embed.Build());
+        embeds.AddRange(parsed.images.Skip(1).Select(otherImage => new EmbedBuilder()
+            .WithTitle(embed.Title)
+            .WithUrl(embed.Url)
+            .WithImageUrl(otherImage).Build()));
+
+        await RespondAsync("", embeds: embeds.ToArray());
     }
 }
