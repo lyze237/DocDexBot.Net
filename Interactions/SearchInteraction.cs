@@ -16,7 +16,7 @@ namespace DocDexBot.Net.Interactions;
 public partial class SearchInteraction : InteractionModuleBase<SocketInteractionContext>
 {
     private readonly IDocDexApiClient apiClient;
-    private readonly HtmlToDiscordParser htmlparser;
+    private readonly IDiscordTextFixer discordTextFixer;
     private readonly IMemoryCache cache;
     private readonly ILogger<SearchInteraction> logger;
     
@@ -24,10 +24,10 @@ public partial class SearchInteraction : InteractionModuleBase<SocketInteraction
     private static partial Regex QueryRegex();
     private readonly Regex queryRegex = QueryRegex();
 
-    public SearchInteraction(IDocDexApiClient apiClient, HtmlToDiscordParser htmlparser, IMemoryCache cache, ILogger<SearchInteraction> logger)
+    public SearchInteraction(IDocDexApiClient apiClient, IDiscordTextFixer discordTextFixer, IMemoryCache cache, ILogger<SearchInteraction> logger)
     {
         this.apiClient = apiClient;
-        this.htmlparser = htmlparser;
+        this.discordTextFixer = discordTextFixer;
         this.cache = cache;
         this.logger = logger;
     }
@@ -67,12 +67,12 @@ public partial class SearchInteraction : InteractionModuleBase<SocketInteraction
 
         var embed = thing.Object.Type switch
         {
-            "METHOD" => new MethodBuilder(thing.Object).Build(),
-            "CLASS" => new ClassBuilder(thing.Object).Build(),
-            "INTERFACE" => new InterfaceBuilder(thing.Object).Build(),
-            "ENUM" => new EnumBuilder(thing.Object).Build(),
-            "FIELD" => new FieldBuilder(thing.Object).Build(),
-            "CONSTRUCTOR" => new ConstructorBuilder(thing.Object).Build(),
+            "METHOD" => new MethodBuilder(thing.Object, discordTextFixer).Build(),
+            "CLASS" => new ClassBuilder(thing.Object, discordTextFixer).Build(),
+            "INTERFACE" => new InterfaceBuilder(thing.Object, discordTextFixer).Build(),
+            "ENUM" => new EnumBuilder(thing.Object, discordTextFixer).Build(),
+            "FIELD" => new FieldBuilder(thing.Object, discordTextFixer).Build(),
+            "CONSTRUCTOR" => new ConstructorBuilder(thing.Object, discordTextFixer).Build(),
             _ => throw new ArgumentOutOfRangeException($"Type {thing.Object.Type} not supported yet")
         };
 

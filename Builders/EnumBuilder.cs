@@ -1,11 +1,12 @@
 ﻿using Discord;
 using DocDexBot.Net.Api.Models;
+using DocDexBot.Net.Api.Parsers;
 
 namespace DocDexBot.Net.Builders;
 
 public class EnumBuilder : ObjectBuilder
 {
-    public EnumBuilder(ObjectModel model) : base(model)
+    public EnumBuilder(ObjectModel model, IDiscordTextFixer discordTextFixer) : base(model, discordTextFixer)
     {
     }
 

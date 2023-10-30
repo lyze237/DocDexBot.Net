@@ -6,8 +6,6 @@ using DocDexBot.Net.Api;
 using DocDexBot.Net.Api.Parsers;
 using DocDexBot.Net.Options;
 using DocDexBot.Net.Workers;
-using Microsoft.Extensions.Options;
-using RestSharp;
 
 var host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
@@ -35,7 +33,8 @@ var host = Host.CreateDefaultBuilder(args)
 
         services.AddMemoryCache();
 
-        services.AddSingleton<HtmlToDiscordParser>();
+        services.AddSingleton<IDiscordTextFixer, DiscordTextFixer>();
+        services.AddSingleton<IWikiApiClient, WikiApiClient>();
         services.AddSingleton<IDocDexApiClient, DocDexApiClient>();
         
         services.AddSingleton<DocDexDiscordClient>();

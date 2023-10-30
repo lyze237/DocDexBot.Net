@@ -7,7 +7,7 @@ namespace DocDexBot.Net.Builders;
 
 public abstract class ObjectBuilder
 {
-    private static readonly HtmlToDiscordParser DiscordParser = new();
+    private readonly IDiscordTextFixer discordTextFixer;
     
     protected readonly ObjectModel Model;
 
@@ -21,10 +21,10 @@ public abstract class ObjectBuilder
         Model.Metadata.ParameterDescriptions.Select(p => $"`{p.Key}` - {p.Value}");
 
     public string ParsedDescription =>
-        DiscordParser.ParseDescription(new Uri(Model.Link), Model.Description);
-    
-    protected ObjectBuilder(ObjectModel model) => 
-        Model = model;
+        discordTextFixer.ParseHtml(new Uri(Model.Link), Model.Description);
+
+    protected ObjectBuilder(ObjectModel model, IDiscordTextFixer discordTextFixer) =>
+        (Model, this.discordTextFixer) = (model, discordTextFixer);
     
     public abstract string GetTitleName();
     public abstract string GetJavaBlockHeader();

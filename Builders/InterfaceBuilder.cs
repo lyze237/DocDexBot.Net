@@ -1,11 +1,12 @@
 ﻿using Discord;
 using DocDexBot.Net.Api.Models;
+using DocDexBot.Net.Api.Parsers;
 
 namespace DocDexBot.Net.Builders;
 
 public class InterfaceBuilder : ObjectBuilder
 {
-    public InterfaceBuilder(ObjectModel model) : base(model)
+    public InterfaceBuilder(ObjectModel model, IDiscordTextFixer discordTextFixer) : base(model, discordTextFixer)
     {
     }
 
