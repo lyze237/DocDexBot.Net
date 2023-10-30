@@ -86,7 +86,7 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
             embed.WithImageUrl(parsed.images.First());
         
         embeds.Add(embed.Build());
-        embeds.AddRange(parsed.images.Skip(1).Select(otherImage => new EmbedBuilder()
+        embeds.AddRange(parsed.images.Skip(1).Take(4).Select(otherImage => new EmbedBuilder()
             .WithTitle(embed.Title)
             .WithUrl(embed.Url)
             .WithImageUrl(otherImage).Build()));
