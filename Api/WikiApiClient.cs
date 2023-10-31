@@ -40,7 +40,7 @@ public class WikiApiClient : IWikiApiClient
 
     private WikiLink MapHtmlNodeToWikiLink(HtmlNode node)
     {
-        var link = new WikiLink(node.SelectSingleNode("a")?.InnerText ?? node.InnerText, node.SelectSingleNode("a")?.Attributes["href"].Value);
+        var link = new WikiLink(node.SelectSingleNode("a")?.GetDirectInnerText() ?? node.GetDirectInnerText(), node.SelectSingleNode("a")?.Attributes["href"].Value);
         
         link.AddChildren(node.SelectNodes("ul/li")?.Select(MapHtmlNodeToWikiLink) ?? new List<WikiLink>());
 

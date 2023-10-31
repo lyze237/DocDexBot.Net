@@ -29,7 +29,7 @@ public class WikiSearchSectionAutocompleteHandler : AutocompleteHandler
         var section = autocompleteInteraction.Data.Current.Value as string;
 
         var autocompleteResults = sections
-            .Select((s, i) => new AutocompleteResult(s.InnerText, $"{pageNumberString}~{s.Id}~{i}~{header}"))
+            .Select((s, i) => new AutocompleteResult(s.GetDirectInnerText(), $"{pageNumberString}~{s.Id}~{i}~{header}"))
             .Where(l => string.IsNullOrWhiteSpace(section) || l.Name.ToLower().Contains(section.ToLower()))
             .Take(24)
             .ToList();
