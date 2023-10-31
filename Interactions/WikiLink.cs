@@ -1,8 +1,9 @@
-﻿using System.Web;
+﻿using System.Text.RegularExpressions;
+using System.Web;
 
 namespace DocDexBot.Net.Interactions;
 
-public class WikiLink
+public partial class WikiLink
 {
     public string Name { get; }
     public string? Link { get; }
@@ -34,6 +35,8 @@ public class WikiLink
             parent = parent.Parent;
         }
 
+        WhitespaceRegex().Replace(name, " ");
+        
         return name;
     }
 
@@ -56,5 +59,13 @@ public class WikiLink
         }
         
         return list;
+    }
+
+    [GeneratedRegex("\\s+")]
+    private static partial Regex WhitespaceRegex();
+
+    public override string ToString()
+    {
+        return $"{nameof(Name)}: {Name}, {nameof(Link)}: {Link}";
     }
 }
