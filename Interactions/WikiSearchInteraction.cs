@@ -62,9 +62,9 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
         await FollowupAsync("", embeds: embeds.ToArray());
     }
 
-    private static (string title, string text) FindCorrectSection(string preParsed, string sectionHeader, bool isHeader, string? sectionIndex)
+    private static (string title, string text) FindCorrectSection(string searchText, string sectionHeader, bool isHeader, string? sectionIndex)
     {
-        var lines = preParsed.Split("\n");
+        var lines = searchText.Split("\n");
         var currentTitle = -1;
         var tripleLine = 0;
 
@@ -97,6 +97,9 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
             }
         }
 
+        if (text.Trim().Length == 0)
+            return FindCorrectSection(searchText, sectionHeader, false, "0");
+        
         return (title, text);
     }
 }
