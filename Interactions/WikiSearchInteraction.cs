@@ -21,10 +21,20 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
     }
 
     [SlashCommand("wiki", "Searches through the libGDX Wiki")]
-    public async Task Search([Summary("Page"), Autocomplete(typeof(WikiSearchAutocompleteHandler))] string pageNumberString, [Summary("Section"), Autocomplete(typeof(WikiSearchSectionAutocompleteHandler))] string section)
+    public async Task Search([Summary("Page"), Autocomplete(typeof(WikiSearchAutocompleteHandler))] string pageNumberString, [Summary("Section"), Autocomplete(typeof(WikiSearchSectionAutocompleteHandler))] string section = "header")
     {
         await DeferAsync();
+        
         var pageNumber = Convert.ToInt32(pageNumberString);
+        var wikiLinks = await wikiApiClient.GetMainWikiPageWikiLinks();
+        var entry = wikiLinks.SelectMany(w => w.GetAllChildren()).ToList()[pageNumber];
+        var entryHref = entry.Link!;
+
+        if (section == "header")
+        {
+            var (_, header) = await wikiApiClient.GetWikiPageSections(entry.Link!);
+            section = $"{pageNumberString}~{header}";
+        }
 
         var isHeader = section.Count(c => c == '~') != 3;
         var sectionSplit = section.Split("~");
@@ -33,9 +43,6 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
         var sectionIndex = isHeader ? null : sectionSplit[2];
         var sectionHeader = isHeader ? sectionSplit[1] : sectionSplit[3];
         
-        var wikiLinks = await wikiApiClient.GetMainWikiPageWikiLinks();
-        var entry = wikiLinks.SelectMany(w => w.GetAllChildren()).ToList()[pageNumber];
-        var entryHref = entry.Link!;
 
         var mdPage = await wikiApiClient.GetMarkdownPage(entryHref);
 
