@@ -1,5 +1,6 @@
 ﻿using DocDexBot.Net.Extensions;
 using DocDexBot.Net.Interactions;
+using DocDexBot.Net.Interactions.AutocompleteHandlers;
 using DocDexBot.Net.Options;
 using HtmlAgilityPack;
 using Microsoft.Extensions.Caching.Memory;
@@ -61,7 +62,7 @@ public class WikiApiClient : IWikiApiClient
                 return (hs.ToArray(), headers);
         }
 
-        throw new ArgumentException($"{href} doesn't contain headers?");
+        return (Array.Empty<HtmlNode>(), 1);
     }
 
     public async Task<HtmlDocument> GetMarkdownPage(string mainWikiHref) =>
