@@ -33,6 +33,14 @@ public partial class DiscordTextFixer : IDiscordTextFixer
         return html.Trim();
     }
 
+    public string PreParseMd(string md)
+    {
+        md = MdHeaderRegex().Replace(md, "### ");
+        md = MdFixStrangeTitle().Replace(md, "## ${title}");
+
+        return md;
+    }
+
     public (string md, List<string> images) ParseMd(Uri baseUri, string md)
     {
         var images = new List<string>();
@@ -50,10 +58,8 @@ public partial class DiscordTextFixer : IDiscordTextFixer
             md = md.ReplaceViaIndex($"[{match.Groups["text"].Value}]({uri.AbsoluteUri})", match.Index, match.Length);
         }
 
-        md = MdFixStrangeTitle().Replace(md, "## ${title}");
         md = MdIncludeRegex().Replace(md, "");
         md = MdNoticeRegex().Replace(md, "");
-        md = MdHeaderRegex().Replace(md, "### ");
 
         md = CleanupMultilinesRegex().Replace(md, "\n");
         return (md, images);

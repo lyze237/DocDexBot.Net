@@ -39,12 +39,35 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
 
         var mdPage = await wikiApiClient.GetMarkdownPage(entryHref);
 
-        var parsed = discordTextFixer.ParseMd(wikiApiClient.GetWikiUrl(), mdPage.Text);
+        var (title, unparsedText) = FindCorrectSection(discordTextFixer.PreParseMd(mdPage.Text), sectionHeader, isHeader, sectionIndex);
+        var (parsedText, images) = discordTextFixer.ParseMd(wikiApiClient.GetWikiUrl(), unparsedText);
         
-        var lines = parsed.md.Split("\n");
+        var embeds = new List<Embed>();
+        
+        var embed = new EmbedBuilder()
+            .WithTitle(title.Trim('"'))
+            .WithUrl(wikiApiClient.GetWikiUrl().GetAbsoluteUrlString($"{entryHref}{sectionAnchor}"))
+            .WithColor(Color.DarkMagenta)
+            .WithDescription(parsedText.SubstringIgnoreError(512, true));
+
+        if (images.Count > 0)
+            embed.WithImageUrl(images.First());
+        
+        embeds.Add(embed.Build());
+        embeds.AddRange(images.Skip(1).Take(4).Select(otherImage => new EmbedBuilder()
+            .WithTitle(embed.Title)
+            .WithUrl(embed.Url)
+            .WithImageUrl(otherImage).Build()));
+
+        await FollowupAsync("", embeds: embeds.ToArray());
+    }
+
+    private static (string title, string text) FindCorrectSection(string preParsed, string sectionHeader, bool isHeader, string? sectionIndex)
+    {
+        var lines = preParsed.Split("\n");
         var currentTitle = -1;
         var tripleLine = 0;
-        
+
         var text = "";
         var title = "";
         foreach (var line in lines)
@@ -61,7 +84,7 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
             // ignore header
             if (tripleLine < 2)
                 continue;
-            
+
             if (line.StartsWith($"{new string('#', Convert.ToInt32(sectionHeader))} "))
                 currentTitle++;
 
@@ -73,24 +96,7 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
                     break;
             }
         }
-        
-        var embeds = new List<Embed>();
-        
-        var embed = new EmbedBuilder()
-            .WithTitle(title.Trim('"'))
-            .WithUrl(wikiApiClient.GetWikiUrl().GetAbsoluteUrlString($"{entryHref}{sectionAnchor}"))
-            .WithColor(Color.DarkMagenta)
-            .WithDescription(text.SubstringIgnoreError(512, true));
 
-        if (parsed.images.Count > 0)
-            embed.WithImageUrl(parsed.images.First());
-        
-        embeds.Add(embed.Build());
-        embeds.AddRange(parsed.images.Skip(1).Take(4).Select(otherImage => new EmbedBuilder()
-            .WithTitle(embed.Title)
-            .WithUrl(embed.Url)
-            .WithImageUrl(otherImage).Build()));
-
-        await FollowupAsync("", embeds: embeds.ToArray());
+        return (title, text);
     }
 }
