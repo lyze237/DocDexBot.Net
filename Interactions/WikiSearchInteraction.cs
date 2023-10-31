@@ -80,7 +80,7 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
             .WithTitle(title.Trim('"'))
             .WithUrl(wikiApiClient.GetWikiUrl().GetAbsoluteUrlString($"{entryHref}{sectionAnchor}"))
             .WithColor(Color.DarkMagenta)
-            .WithDescription(text.SubstringIgnoreError(1024, true));
+            .WithDescription(text.SubstringIgnoreError(512, true));
 
         if (parsed.images.Count > 0)
             embed.WithImageUrl(parsed.images.First());
