@@ -4,6 +4,8 @@ using DocDexBot.Net.Api;
 using DocDexBot.Net.Api.Parsers;
 using DocDexBot.Net.Extensions;
 using DocDexBot.Net.Interactions.AutocompleteHandlers;
+using Microsoft.VisualBasic;
+using Microsoft.VisualBasic.CompilerServices;
 
 namespace DocDexBot.Net.Interactions;
 
@@ -23,9 +25,13 @@ public class WikiSearchInteraction : InteractionModuleBase<SocketInteractionCont
     [SlashCommand("wiki", "Searches through the libGDX Wiki")]
     public async Task Search([Summary("Page"), Autocomplete(typeof(WikiSearchAutocompleteHandler))] string pageNumberString, [Summary("Section"), Autocomplete(typeof(WikiSearchSectionAutocompleteHandler))] string section = "header")
     {
+        if (!int.TryParse(pageNumberString, out var pageNumber) || (section != "header" && section.Count(c => c == '~') != 3))
+        {
+            throw new ArgumentException("You didn't use autocomplete >:C");
+        }
+
         await DeferAsync();
         
-        var pageNumber = Convert.ToInt32(pageNumberString);
         var wikiLinks = await wikiApiClient.GetMainWikiPageWikiLinks();
         var entry = wikiLinks.SelectMany(w => w.GetAllChildren()).ToList()[pageNumber];
         var entryHref = entry.Link!;
